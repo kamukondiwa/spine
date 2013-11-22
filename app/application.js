@@ -60,42 +60,4 @@ $(function() {
     collection: new AutoCompleteItems()
   });
 
-  var mockServer = {
-    init: function() {
-      var searchTerm = mockServer.getQyeryStringParameterByName('q')
-      alert(searchTerm)
-      response = mockServer.data;
-      if (searchTerm) {
-        response = _.filter(response, function(autocompleteItem) {
-          var match = autocompleteItem.title.toLowerCase().indexOf(searchTerm.toLowerCase()) != -1; //check if item title contains search term
-          return match;
-        })
-      }
-      return response;
-    },
-    getQyeryStringParameterByName: function(name) {
-      name = name.replace(/[\[]/, "\\\[").replace(/[\]]/, "\\\]");
-      var regex = new RegExp("[\\?&]" + name + "=([^&#]*)"),
-        results = regex.exec(location.search);
-      return results == null ? "" : decodeURIComponent(results[1].replace(/\+/g, " "));
-    },
-    data: [{
-      title: 'Arctic monkeys',
-      url: '/rock-and-pop/arctic-monkeys-tickets.html'
-    }, {
-      title: 'Another a',
-      url: '#'
-    }, {
-      title: 'BBBBBBBBBB',
-      url: '#'
-    }, {
-      title: 'CCCCCCC',
-      url: '#'
-    }, {
-      title: 'DDDDDDDD',
-      url: '#'
-    }]
-  };
-
-
 });
