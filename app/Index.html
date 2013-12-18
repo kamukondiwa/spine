@@ -11,44 +11,114 @@
 		<style type="text/css" src="//netdna.bootstrapcdn.com/bootstrap/3.0.3/css/bootstrap.min.css"></style>
 	</head>
 	<body>
-
 		<div class="container">
 			<h1>Recent photos</h1>
 			<div class="photos">
-				
 			</div>
 		</div>
+		<script  type="text/template" id="photo-template">
+			<%_.each(photos, function(photo){%>
+				<p><%= photo.get('title')%></p>
+				<img src="<%= photo.thumbnail_url()%>">
+			<%});%>
+		</script>
 		<script  type="text/javascript" charset="utf-8">
 			(function($) {
 
-				var PhotosCollection = Backbone.Collection.extend({
+				var callback = function(data) {
+					console.log(data);
+				};
 
+				$.ajaxPrefilter(function(options, originalOptions, jqXHR) {
+					options.url = 'http://api.flickr.com/services/rest/';
+					options.crossDomain = true;
+
+					var params = {
+						api_key: 'eefd6fb1ac8895d7993c0826c56aafd7',
+						format: 'json',
+					};
+
+					options.data = options.data + '&' || '';
+					options.data = options.data + decodeURIComponent($.param(params));
 				});
 
-				var RecentPhotos = Backbone.View.extend({
-					el: '.photos',
-					render: function(){
-						this.$el.html('content mutha funkA!');
+				var PhotoModel = Backbone.Model.extend({
+					large_url: function() {
+						return this.image_url('medium');
+					},
+					thumbnail_url: function() {
+						return this.image_url('square');
+					},
+					image_url: function(size) {
+						var size_code;
+						switch (size) {
+							case 'square':
+								size_code = '_s';
+								break; 
+							case 'medium':
+								size_code = '_z';
+								break;
+							case 'large':
+								size_code = '_b';
+								break;
+							default:
+								size_code = '';
+						}
+						return 'http://farm' + this.get('farm') + '.static.flickr.com/' + this.get('server') + '/' + this.get('id') + '_' + this.get('secret') + size_code + '.jpg';
 					}
 				});
 
-				var recentPhotos = new RecentPhotos();
+				var Photos = Backbone.Collection.extend({
+					url: '/photos',
+					model: PhotoModel,
+					fetch: function(callback) {
+                		var self = this;
+						$.ajax({
+							dataType: 'jsonp',
+							jsonpCallback: 'jsonFlickrApi',
+							data: {
+								method: 'flickr.photos.getRecent',
+								per_page: 10,
+								page: 1
+							},
+							success: function(response){
+		                        self.add(response.photos.photo);
+								callback();
+							}
+						});
+					},
+				});
+
+				var PhotosView = Backbone.View.extend({
+					el: '.photos',
+					initialize: function(options) {
+						this.photos = new Photos();
+					},
+					render: function() {
+						var self = this;
+						this.photos.fetch(function() {
+							var template = _.template($('#photo-template').html(), {
+								photos: self.photos.models
+							});
+							self.$el.html(template);
+						});
+					}
+				});
 
 				var Router = Backbone.Router.extend({
-					routes:{
-						'':'recentPhotos'
+					routes: {
+						'': 'photos'
 					}
 				});
 
 				var router = new Router();
 
-				router.on('route:recentPhotos', function(){
-					recentPhotos.render();
+				router.on('route:photos', function() {
+					var photosView = new PhotosView();
+					photosView.render();
 				});
 
 				Backbone.history.start();
-
-				// var photoView = new PhotoView();
 
 			})(jQuery);
 		</script>
