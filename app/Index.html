@@ -9,7 +9,8 @@
         </title>
         <script src="http://cdnjs.cloudflare.com/ajax/libs/jquery/1.8.2/jquery.min.js" type="text/javascript"></script>
         <script src="http://cdnjs.cloudflare.com/ajax/libs/underscore.js/1.4.2/underscore-min.js" type="text/javascript"></script>
-        <script src="http://cdnjs.cloudflare.com/ajax/libs/backbone.js/0.9.2/backbone-min.js"></script>
+        <!--<script src="http://cdnjs.cloudflare.com/ajax/libs/backbone.js/0.9.2/backbone-min.js"></script>-->
+        <script src="http://backbonejs.org/backbone.js"></script>
         <script src="http://netdna.bootstrapcdn.com/bootstrap/3.0.3/js/bootstrap.min.js" type="text/javascript"></script>
         <style type="text/css" src="//netdna.bootstrapcdn.com/bootstrap/3.0.3/css/bootstrap.min.css"></style>
     </head>
@@ -21,7 +22,7 @@
             <div class="photos"></div>
         </div>
         <script type="text/template" id="photo-template">
-        <%_.each(photos, function(photo){%>
+        <%_.each(models, function(photo){%>
           <h3><%= photo.get('title')%></h3>
           <img src="<%= photo.thumbnail_url()%>">
         <%});%>
@@ -30,7 +31,6 @@
         	var Spine = Spine || {};
 
 			(function($) {
-
 				Spine.PhotoModel = Backbone.Model.extend({
 					large_url: function() {
 						return this.image_url('medium');
@@ -57,33 +57,30 @@
 					}
 				});	
 
-				Spine.Photos = Backbone.Collection.extend({
+				Spine.PhotosCollection = Backbone.Collection.extend({
 					url: '/photos',
-					model: Spine.PhotoModel
+					model: Spine.PhotoModel,
+					parse:function(response){
+						this.page = response.photos.page;
+						this.pages = response.photos.pages;
+						this.perpage = response.photos.perpage;
+						return response.photos.photo;
+					}
 				});
 
 				Spine.PhotosView = Backbone.View.extend({
 					el: '.photos',
-					initialize: function(options) {
-						this.photos = new Spine.Photos();
-					},
 					render: function() {
-						self = this;
-						this.photos.fetch({
+						Spine.photosCollection.fetch({
 							data: {
 								method: 'flickr.photos.getRecent',
 								per_page: 10,
 								page: 1
 							},
 							success: function(collection, response) {
-								// collection.add(response.photos.photo);
-
-								var model =  {
-									photos: collection.models
-								};
 								var templateHtml = $('#photo-template').html();
-								var template = _.template(templateHtml, model);
-								self.$el.html(template);
+								var template = _.template(templateHtml, collection);
+								Spine.photosView.$el.html(template);
 							},
 							error: function(collection, response, options) {
 								console.log(response.responseText);
@@ -117,8 +114,9 @@
 				var router = new Spine.Router();
 
 				router.on('route:photos', function() {
-					var photosView = new Spine.PhotosView();
-					photosView.render();
+					Spine.photosCollection = new Spine.PhotosCollection();
+					Spine.photosView = new Spine.PhotosView();
+					Spine.photosView.render();
 				});
 
 				Backbone.history.start();
