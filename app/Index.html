@@ -27,9 +27,11 @@
         <%});%>
         </script>
         <script type="text/javascript" charset="utf-8">
+        	var Spine = Spine || {};
+
 			(function($) {
 
-				var PhotoModel = Backbone.Model.extend({
+				Spine.PhotoModel = Backbone.Model.extend({
 					large_url: function() {
 						return this.image_url('medium');
 					},
@@ -55,15 +57,15 @@
 					}
 				});	
 
-				var Photos = Backbone.Collection.extend({
+				Spine.Photos = Backbone.Collection.extend({
 					url: '/photos',
-					model: PhotoModel
+					model: Spine.PhotoModel
 				});
 
-				var PhotosView = Backbone.View.extend({
+				Spine.PhotosView = Backbone.View.extend({
 					el: '.photos',
 					initialize: function(options) {
-						this.photos = new Photos();
+						this.photos = new Spine.Photos();
 					},
 					render: function() {
 						self = this;
@@ -76,10 +78,11 @@
 							success: function(collection, response) {
 								// collection.add(response.photos.photo);
 
-								var template = _.template($('#photo-template').html(), {
+								var model =  {
 									photos: collection.models
-								});
-
+								};
+								var templateHtml = $('#photo-template').html();
+								var template = _.template(templateHtml, model);
 								self.$el.html(template);
 							},
 							error: function(collection, response, options) {
@@ -89,7 +92,7 @@
 					}
 				});
 
-				var Router = Backbone.Router.extend({
+				Spine.Router = Backbone.Router.extend({
 					initialize: function() {
 						$.ajaxPrefilter(function(options, originalOptions, jqXHR) {
 							options.url = 'http://api.flickr.com/services/rest/';
@@ -111,10 +114,10 @@
 					}
 				});
 
-				var router = new Router();
+				var router = new Spine.Router();
 
 				router.on('route:photos', function() {
-					var photosView = new PhotosView();
+					var photosView = new Spine.PhotosView();
 					photosView.render();
 				});
 
