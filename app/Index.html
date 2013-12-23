@@ -75,7 +75,8 @@
 
 				Spine.PhotosView = Backbone.View.extend({
 					el: '.photos',
-					initialize: function(){
+					initialize: function(options){
+						this.options = options || { page:1 };
 						this.render();
 					},
 					render: function() {
@@ -83,7 +84,7 @@
 							data: {
 								method: 'flickr.photos.getRecent',
 								per_page: 10,
-								page: 1
+								page: this.options.page
 							},
 							success: function(collection, response) {
 								var templateHtml = $('#photo-template').html();
@@ -108,11 +109,13 @@
 					},
 					pagePrevious: function(evt){
 						evt.preventDefault();
-						console.log('Go to previous');
+						var page = (Spine.photosCollection.page - 1);
+						Spine.photosView = new Spine.PhotosView({page: page});
 					},
 					pageNext: function(evt){
 						evt.preventDefault();
-						console.log('Go to next');
+						var page = (Spine.photosCollection.page + 1);
+						Spine.photosView = new Spine.PhotosView({page: page});
 					}
 				});
 
