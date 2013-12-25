@@ -1,42 +1,44 @@
 <!DOCTYPE html>
 <html>
-    <head>
-        <meta name="generator" content="HTML Tidy for HTML5 (experimental) for Windows https://github.com/w3c/tidy-html5/tree/c63cc39">
-        <meta charset="utf-8">
-        <meta http-equiv="X-UA-Compatible" content="IE=edge">
-        <title>
-            Spine Strikr
-        </title>
-        <script src="http://cdnjs.cloudflare.com/ajax/libs/jquery/1.8.2/jquery.min.js" type="text/javascript"></script>
-        <script src="http://cdnjs.cloudflare.com/ajax/libs/underscore.js/1.4.2/underscore-min.js" type="text/javascript"></script>
-        <!--<script src="http://cdnjs.cloudflare.com/ajax/libs/backbone.js/0.9.2/backbone-min.js"></script>-->
-        <script src="http://backbonejs.org/backbone.js"></script>
-        <script src="http://netdna.bootstrapcdn.com/bootstrap/3.0.3/js/bootstrap.min.js" type="text/javascript"></script>
-        <style type="text/css" src="//netdna.bootstrapcdn.com/bootstrap/3.0.3/css/bootstrap.min.css"></style>
-    </head>
-    <body>
-        <div class="container">
-            <h1>
-                Recent photos
-            </h1>
-            <div class="pager"></div>
-            <div class="photos"></div>
-        </div>
-        <script type="text/template" id="pager-template">
-        	Page <%= page %> of <%= pages %>
-        	<a href="#" class="previous_button">Previous</a>
-        	<a href="#" class="next_button">Next</a>
-        </script>
-        <script type="text/template" id="photo-template">
-        <%_.each(models, function(photo){%>
-          <h3><%= photo.get('title')%></h3>
-          <img src="<%= photo.thumbnail_url()%>">
-        <%});%>
-        </script>
-        <script type="text/javascript" charset="utf-8">
+	<head>
+		<meta name="generator" content="HTML Tidy for HTML5 (experimental) for Windows https://github.com/w3c/tidy-html5/tree/c63cc39">
+		<meta charset="utf-8">
+		<meta http-equiv="X-UA-Compatible" content="IE=edge">
+		<title>
+			Spine Strikr
+		</title>
+		<script src="http://cdnjs.cloudflare.com/ajax/libs/jquery/1.8.2/jquery.min.js" type="text/javascript"></script>
+		<script src="http://cdnjs.cloudflare.com/ajax/libs/underscore.js/1.4.2/underscore-min.js" type="text/javascript"></script>
+		<!--<script src="http://cdnjs.cloudflare.com/ajax/libs/backbone.js/0.9.2/backbone-min.js"></script>-->
+		<script src="http://backbonejs.org/backbone.js"></script>
+		<script src="http://netdna.bootstrapcdn.com/bootstrap/3.0.3/js/bootstrap.min.js" type="text/javascript"></script>
+		<style type="text/css" src="//netdna.bootstrapcdn.com/bootstrap/3.0.3/css/bootstrap.min.css"></style>
+	</head>
+	<body>
+		<div class="container">
+			<h1>
+				Recent photos
+			</h1>
+			<div class="pager"></div>
+			<div class="photos"></div>
+		</div>
+		<script type="text/template" id="pager-template">
+			Page <%= page %> of <%= pages %>
+			<a href="#" class="previous_button">Previous</a>
+			<a href="#" class="next_button">Next</a>
+		</script>
+		<script type="text/template" id="photo-template">
+			<%_.each(models, function(photo){%>
+				<h3><%= photo.get('title')%></h3>
+				<img src="<%= photo.thumbnail_url()%>">
+			<%});%>
+		</script>
+		<script type="text/javascript" charset="utf-8">
 			var Spine = Spine || {};
 
 			(function($) {
+
+				/******** Model: Allows us to construct image urls for varying sized images ********/
 				Spine.PhotoModel = Backbone.Model.extend({
 					large_url: function() {
 						return this.image_url('medium');
@@ -63,34 +65,54 @@
 					}
 				});
 
+				/******** Collection: Contains a page of the most recent flickr photos ********/
 				Spine.PhotosCollection = Backbone.Collection.extend({
 					url: '/photos',
 					model: Spine.PhotoModel,
 					options: {
-						reset: true,
+						reset: true, //This triggers the reset event that the views are listening for.
 						data: {
 							method: 'flickr.photos.getRecent',
 							per_page: 10,
 							page: 1
 						}
 					},
+					/***
+						Request the first page of photos when 
+						the collection is created
+					***/
 					initialize: function(){
 						this.fetch(this.options);
 					},
+					/***
+						This method parses the api flickr api
+						response into a form more easily 
+						handled by this applicaiton
+					***/
 					parse: function(response) {
 						this.page = response.photos.page;
 						this.pages = response.photos.pages;
 						this.perpage = response.photos.perpage;
 						return response.photos.photo;
 					},
+					/***
+						Updates the page on the request options
+						and request a new page of results from
+						flickr.
+					***/
 					changePage: function(page){
 						this.options.data.page = page;
 						this.fetch(this.options);
 					}
 				});
 
+
+				/******** View: Photos list view ********/
 				Spine.PhotosView = Backbone.View.extend({
 					el: '.photos',
+					/***
+						Listen for reset event on the collection and render the view.
+					***/
 					initialize: function(options) {
 						this.listenTo(Spine.photosCollection, 'reset', this.render)
 					},
@@ -101,8 +123,13 @@
 					}
 				});
 
+
+				/******** View: Pager ********/
 				Spine.PagerView = Backbone.View.extend({
 					el: '.pager',
+					/***
+						Listen for reset event on the collection and render the view.
+					***/
 					initialize: function() {
 						this.listenTo(Spine.photosCollection, 'reset', this.render)
 					},
@@ -127,7 +154,14 @@
 					}
 				});
 
+				/******** Router: Application start point ********/
 				Spine.Router = Backbone.Router.extend({
+					/***
+						Modifies the jQuery Ajax options prior to any ajax requset:
+						Adds default flickr REST api url, apiKey, crossDomain and jsonp 
+						callback options to those provided by collections and model
+						requests.
+					***/
 					initialize: function() {
 						$.ajaxPrefilter(function(options, originalOptions, jqXHR) {
 							options.url = 'http://api.flickr.com/services/rest/';
@@ -145,13 +179,19 @@
 
 					},
 					routes: {
-						'': 'photos'
+						'': 'photos' //Default route
 					}
 				});
 
-				var router = new Spine.Router();
 
-				router.on('route:photos', function() {
+				Spine.router = new Spine.Router();
+
+				/***
+					When the default route is activated
+					Initialise the default state of the 
+					application
+				***/
+				Spine.router.on('route:photos', function() {
 					Spine.photosCollection = new Spine.PhotosCollection();
 					Spine.photosView = new Spine.PhotosView();
 					Spine.pagerView = new Spine.PagerView();
@@ -160,6 +200,6 @@
 				Backbone.history.start();
 
 			})(jQuery);
-        </script>
-    </body>
+		</script>
+	</body>
 </html>
