@@ -97,7 +97,7 @@
 					render: function() {
 						var templateHtml = $('#photo-template').html();
 						var template = _.template(templateHtml, Spine.photosCollection);
-						Spine.photosView.$el.html(template);
+						this.$el.html(template);
 					}
 				});
 
