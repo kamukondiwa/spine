@@ -23,9 +23,9 @@
             <div class="photos"></div>
         </div>
         <script type="text/template" id="pager-template">
-    		Page <%= page %> of <%= pages %>
-			<a href="#" class="previous_button">Previous</a>
-			<a href="#" class="next_button">Next</a>	
+        	Page <%= page %> of <%= pages %>
+        	<a href="#" class="previous_button">Previous</a>
+        	<a href="#" class="next_button">Next</a>
         </script>
         <script type="text/template" id="photo-template">
         <%_.each(models, function(photo){%>
@@ -66,45 +66,45 @@
 				Spine.PhotosCollection = Backbone.Collection.extend({
 					url: '/photos',
 					model: Spine.PhotoModel,
+					options: {
+						reset: true,
+						data: {
+							method: 'flickr.photos.getRecent',
+							per_page: 10,
+							page: 1
+						}
+					},
+					initialize: function(){
+						this.fetch(this.options);
+					},
 					parse: function(response) {
 						this.page = response.photos.page;
 						this.pages = response.photos.pages;
 						this.perpage = response.photos.perpage;
 						return response.photos.photo;
+					},
+					changePage: function(page){
+						this.options.data.page = page;
+						this.fetch(this.options);
 					}
 				});
 
 				Spine.PhotosView = Backbone.View.extend({
 					el: '.photos',
 					initialize: function(options) {
-						this.options = options || {
-							page: 1
-						};
-						this.render();
+						this.listenTo(Spine.photosCollection, 'reset', this.render)
 					},
 					render: function() {
-						Spine.photosCollection.fetch({
-							data: {
-								method: 'flickr.photos.getRecent',
-								per_page: 10,
-								page: this.options.page
-							},
-							success: function(collection, response) {
-								var templateHtml = $('#photo-template').html();
-								var template = _.template(templateHtml, collection);
-								Spine.photosView.$el.html(template);
-							},
-							error: function(collection, response, options) {
-								console.log(response.responseText);
-							}
-						});
+						var templateHtml = $('#photo-template').html();
+						var template = _.template(templateHtml, Spine.photosCollection);
+						Spine.photosView.$el.html(template);
 					}
 				});
 
 				Spine.PagerView = Backbone.View.extend({
 					el: '.pager',
 					initialize: function() {
-						this.listenTo(Spine.photosCollection, 'add', this.render)
+						this.listenTo(Spine.photosCollection, 'reset', this.render)
 					},
 					render: function(){
 						var templateHtml = $('#pager-template').html();
@@ -117,19 +117,13 @@
 					},
 					pagePrevious: function(evt) {
 						evt.preventDefault();
-						var page = (Spine.photosCollection.page - 1);
-
-						Spine.photosView = new Spine.PhotosView({
-							page: page
-						});
+						var page = Spine.photosCollection.page - 1;
+						Spine.photosCollection.changePage(page);
 					},
 					pageNext: function(evt) {
 						evt.preventDefault();
-						var page = (Spine.photosCollection.page + 1);
-						
-						Spine.photosView = new Spine.PhotosView({
-							page: page
-						});
+						var page = Spine.photosCollection.page + 1;
+						Spine.photosCollection.changePage(page);
 					}
 				});
 
